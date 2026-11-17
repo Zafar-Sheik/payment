@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rand Wallet</title>
+  <link rel="stylesheet" href="/styles.css">
+  <meta name="theme-color" content="#0f766e">
+</head>
+<body>
+  <!-- Signed-out -->
+  <main id="auth-view" class="auth" hidden>
+    <div class="auth-card">
+      <div class="brand">Rand<span>Wallet</span></div>
+      <p class="muted">Send and receive rands instantly.</p>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="login" type="button">Sign in</button>
+        <button class="tab" data-tab="register" type="button">Create account</button>
+      </div>
+      <form id="login-form" class="stack">
+        <label>Email <input name="email" type="email" autocomplete="email" required></label>
+        <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="btn primary" type="submit">Sign in</button>
+      </form>
+      <form id="register-form" class="stack" hidden>
+        <label>Full name <input name="displayName" autocomplete="name" required maxlength="80"></label>
+        <label>Handle <input name="handle" required pattern="[a-zA-Z0-9_]{3,20}" placeholder="e.g. thandi_m" autocapitalize="none"></label>
+        <label>Email <input name="email" type="email" autocomplete="email" required></label>
+        <label>Password <input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+        <button class="btn primary" type="submit">Create account</button>
+      </form>
+      <p class="error" id="auth-error" role="alert"></p>
+    </div>
+  </main>
+
+  <!-- Signed-in -->
+  <div id="app-view" hidden>
+    <header class="topbar">
+      <div class="brand small">Rand<span>Wallet</span></div>
+      <div class="who"><span id="me-name"></span> <span class="handle" id="me-handle"></span>
+        <button class="link" id="logout" type="button">Sign out</button></div>
+    </header>
+
+    <main class="container">
+      <div id="flash" class="flash" role="status" hidden></div>
+
+      <section id="kyc-banner" class="card banner" hidden>
+        <div>
+          <strong>Verify your identity</strong>
+          <p class="muted">Unverified wallets can hold up to R<span id="lim-bal"></span> and send R<span id="lim-send"></span> a day, and cannot withdraw.</p>
+        </div>
+        <button class="btn" data-open="kyc-dialog" type="button">Verify</button>
+      </section>
+
+      <section class="card balance-card">
+        <div class="muted">Available balance</div>
+        <div class="balance" id="balance">R —</div>
+        <div class="row">
+          <button class="btn light" data-open="deposit-dialog" type="button">Add money</button>
+          <button class="btn light" data-open="withdraw-dialog" type="button">Withdraw</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="tabs">
+          <button class="tab active" data-mode="send" type="button">Send</button>
+          <button class="tab" data-mode="request" type="button">Request</button>
+        </div>
+        <form id="pay-form" class="stack">
+          <label><span id="who-label">To</span> <input name="who" required placeholder="@handle or email" autocapitalize="none" autocomplete="off"></label>
+          <div class="recipient" id="recipient-preview"></div>
+          <label>Amount (R) <input name="amount" required inputmode="decimal" pattern="\d+(\.\d{1,2})?" placeholder="0.00"></label>
+          <label>Note <input name="note" maxlength="140" placeholder="What's it for?"></label>
+          <button class="btn primary" type="submit" id="pay-submit">Send money</button>
+        </form>
+      </section>
+
+      <section class="card" id="requests-card" hidden>
+        <h2>Requests</h2>
+        <ul class="list" id="requests"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Activity</h2>
+        <ul class="list" id="activity"><li class="muted">No activity yet.</li></ul>
+      </section>
+    </main>
+  </div>
+
+  <!-- Dialogs -->
+  <dialog id="deposit-dialog">
+    <form class="stack" id="deposit-form">
+      <h2>Add money</h2>
+      <p class="muted">Pay by card or instant EFT through our payment partner.</p>
+      <label>Amount (R) <input name="amount" required inputmode="decimal" pattern="\d+(\.\d{1,2})?" placeholder="100.00"></label>
+      <div class="row end"><button class="btn" value="cancel" formmethod="dialog" formnovalidate>Cancel</button><button class="btn primary" type="submit">Continue to payment</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="withdraw-dialog">
+    <form class="stack" id="withdraw-form">
+      <h2>Withdraw to bank</h2>
+      <label>Bank account <select name="bankAccountId" id="bank-account-select" required></select></label>
+      <label>Amount (R) <input name="amount" required inputmode="decimal" pattern="\d+(\.\d{1,2})?" placeholder="0.00"></label>
+      <p class="muted">A R<span id="wd-fee">5.00</span> fee applies. Payouts usually arrive same day.</p>
+      <div class="row end"><button class="btn" value="cancel" formmethod="dialog" formnovalidate>Cancel</button><button class="btn primary" type="submit">Withdraw</button></div>
+    </form>
+    <details class="add-bank">
+      <summary>Add a bank account</summary>
+      <form class="stack" id="bank-form">
+        <label>Bank <select name="bankCode" id="bank-select" required></select></label>
+        <label>Account number <input name="accountNumber" required inputmode="numeric" pattern="\d{6,16}"></label>
+        <label>Account holder <input name="accountHolder" required></label>
+        <button class="btn" type="submit">Save bank account</button>
+      </form>
+    </details>
+    <ul class="list compact" id="withdrawals"></ul>
+  </dialog>
+
+  <dialog id="kyc-dialog">
+    <form class="stack" id="kyc-form">
+      <h2>Verify your identity</h2>
+      <p class="muted">Enter your 13-digit South African ID number. In production this is checked against Home Affairs through a verification partner.</p>
+      <label>ID number <input name="idNumber" required inputmode="numeric" pattern="\d{13}" maxlength="13"></label>
+      <div class="row end"><button class="btn" value="cancel" formmethod="dialog" formnovalidate>Cancel</button><button class="btn primary" type="submit">Verify</button></div>
+    </form>
+  </dialog>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
